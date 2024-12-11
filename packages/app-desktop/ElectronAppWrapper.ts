@@ -527,6 +527,10 @@ export default class ElectronAppWrapper {
 	}
 
 	public ensureSingleInstance() {
+		console.error('TRYING SINGLE INSTANCE');
+		console.error('TRYING SINGLE INSTANCE');
+		console.error('TRYING SINGLE INSTANCE');
+		console.error('TRYING SINGLE INSTANCE');
 		if (this.env_ === 'dev') return false;
 
 		const gotTheLock = this.electronApp_.requestSingleInstanceLock();

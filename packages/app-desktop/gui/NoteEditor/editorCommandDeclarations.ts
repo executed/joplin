@@ -161,6 +161,9 @@ const declarations: CommandDeclaration[] = [
 		name: 'editor.focus',
 	},
 	{
+		name: 'editor.setCursorAtEndOfLine',
+	},
+	{
 		name: 'editor.execCommand',
 	},
 ];
