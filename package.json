@@ -64,11 +64,6 @@
     "watch": "yarn workspaces foreach --parallel --verbose --interlaced --jobs 999 run watch",
     "watchWebsite": "nodemon --delay 1 --watch Assets/WebsiteAssets --watch packages/tools/website --watch packages/tools/website/utils --watch packages/doc-builder/build --ext md,ts,js,mustache,css,tsx,gif,png,svg --exec \"node packages/tools/website/build.js && http-server --port 8077 ../joplin-website/docs -a localhost\""
   },
-  "husky": {
-    "hooks": {
-      "pre-commit": "yarn --version"
-    }
-  },
   "devDependencies": {
     "@crowdin/cli": "3",
     "@joplin/utils": "~2.12",
