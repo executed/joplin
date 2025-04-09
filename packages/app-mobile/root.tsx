@@ -12,7 +12,7 @@ import BaseModel from '@joplin/lib/BaseModel';
 import BaseService from '@joplin/lib/services/BaseService';
 import ResourceService from '@joplin/lib/services/ResourceService';
 import KvStore from '@joplin/lib/services/KvStore';
-import NoteScreen from './components/screens/Note';
+import NoteScreen from './components/screens/Note/Note';
 import UpgradeSyncTargetScreen from './components/screens/UpgradeSyncTargetScreen';
 import Setting, { AppType, Env } from '@joplin/lib/models/Setting';
 import PoorManIntervals from '@joplin/lib/PoorManIntervals';
@@ -27,7 +27,7 @@ import SyncTargetJoplinCloud from '@joplin/lib/SyncTargetJoplinCloud';
 import SyncTargetOneDrive from '@joplin/lib/SyncTargetOneDrive';
 import initProfile from '@joplin/lib/services/profileConfig/initProfile';
 const VersionInfo = require('react-native-version-info').default;
-const { Keyboard, BackHandler, Animated, StatusBar, Platform, Dimensions } = require('react-native');
+import { Keyboard, BackHandler, Animated, StatusBar, Platform, Dimensions } from 'react-native';
 import { AppState as RNAppState, EmitterSubscription, View, Text, Linking, NativeEventSubscription, Appearance, ActivityIndicator } from 'react-native';
 import getResponsiveValue from './components/getResponsiveValue';
 import NetInfo from '@react-native-community/netinfo';
@@ -55,7 +55,7 @@ import Revision from '@joplin/lib/models/Revision';
 import RevisionService from '@joplin/lib/services/RevisionService';
 import JoplinDatabase from '@joplin/lib/JoplinDatabase';
 import Database from '@joplin/lib/database';
-import NotesScreen from './components/screens/Notes';
+import NotesScreen from './components/screens/Notes/Notes';
 import TagsScreen from './components/screens/tags';
 import ConfigScreen from './components/screens/ConfigScreen/ConfigScreen';
 const { FolderScreen } = require('./components/screens/folder.js');
@@ -139,6 +139,8 @@ import DialogManager from './components/DialogManager';
 import lockToSingleInstance from './utils/lockToSingleInstance';
 import { AppState } from './utils/types';
 import { getDisplayParentId } from '@joplin/lib/services/trash';
+import PluginNotification from './components/plugins/PluginNotification';
+import FocusControl from './components/accessibility/FocusControl/FocusControl';
 
 const logger = Logger.create('root');
 
@@ -443,6 +445,9 @@ const appReducer = (state = appDefaultState, action: any) => {
 			newState.isOnMobileData = action.isOnMobileData;
 			break;
 
+		case 'KEYBOARD_VISIBLE_CHANGE':
+			newState = { ...state, keyboardVisible: action.visible };
+			break;
 		}
 	} catch (error) {
 		error.message = `In reducer: ${error.message} Action: ${JSON.stringify(action)}`;
@@ -853,6 +858,8 @@ class AppComponent extends React.Component {
 	private urlOpenListener_: EmitterSubscription|null = null;
 	private appStateChangeListener_: NativeEventSubscription|null = null;
 	private themeChangeListener_: NativeEventSubscription|null = null;
+	private keyboardShowListener_: EmitterSubscription|null = null;
+	private keyboardHideListener_: EmitterSubscription|null = null;
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any -- Old code before rule was applied
 	private dropdownAlert_ = (_data: any) => new Promise<any>(res => res);
 	private callbackUrl: string|null = null;
@@ -1038,6 +1045,19 @@ class AppComponent extends React.Component {
 
 		await setupNotifications(this.props.dispatch);
 
+		this.keyboardShowListener_ = Keyboard.addListener('keyboardDidShow', () => {
+			this.props.dispatch({
+				type: 'KEYBOARD_VISIBLE_CHANGE',
+				visible: true,
+			});
+		});
+		this.keyboardHideListener_ = Keyboard.addListener('keyboardDidHide', () => {
+			this.props.dispatch({
+				type: 'KEYBOARD_VISIBLE_CHANGE',
+				visible: false,
+			});
+		});
+
 		// Setting.setValue('encryption.masterPassword', 'WRONG');
 		// setTimeout(() => NavService.go('EncryptionConfig'), 2000);
 	}
@@ -1073,6 +1093,15 @@ class AppComponent extends React.Component {
 		if (this.quickActionShortcutListener_) {
 			this.quickActionShortcutListener_.remove();
 			this.quickActionShortcutListener_ = undefined;
+		}
+
+		if (this.keyboardShowListener_) {
+			this.keyboardShowListener_.remove();
+			this.keyboardShowListener_ = undefined;
+		}
+		if (this.keyboardHideListener_) {
+			this.keyboardHideListener_.remove();
+			this.keyboardHideListener_ = undefined;
 		}
 	}
 
@@ -1284,7 +1313,7 @@ class AppComponent extends React.Component {
 					disableGestures={disableSideMenuGestures}
 				>
 					<StatusBar barStyle={statusBarStyle} />
-					<MenuProvider style={{ flex: 1 }}>
+					<View style={{ flexGrow: 1, flexShrink: 1, flexBasis: '100%' }}>
 						<SafeAreaView style={{ flex: 0, backgroundColor: theme.backgroundColor2 }}/>
 						<SafeAreaView style={{ flex: 1 }}>
 							<View style={{ flex: 1, backgroundColor: theme.backgroundColor }}>
@@ -1298,9 +1327,10 @@ class AppComponent extends React.Component {
 								sensorInfo={this.state.sensorInfo}
 							/> }
 						</SafeAreaView>
-					</MenuProvider>
+					</View>
 				</SideMenu>
 				<PluginRunnerWebView />
+				<PluginNotification/>
 			</View>
 		);
 
@@ -1309,44 +1339,53 @@ class AppComponent extends React.Component {
 
 		// Wrap everything in a PaperProvider -- this allows using components from react-native-paper
 		return (
-			<PaperProvider theme={{
-				...paperTheme,
-				version: 3,
-				colors: {
-					...paperTheme.colors,
-					onPrimaryContainer: theme.color5,
-					primaryContainer: theme.backgroundColor5,
+			<FocusControl.Provider>
+				<PaperProvider theme={{
+					...paperTheme,
+					version: 3,
+					colors: {
+						...paperTheme.colors,
+						onPrimaryContainer: theme.color5,
+						primaryContainer: theme.backgroundColor5,
 
-					outline: theme.codeBorderColor,
+						outline: theme.codeBorderColor,
 
-					primary: theme.color4,
-					onPrimary: theme.backgroundColor4,
+						primary: theme.color4,
+						onPrimary: theme.backgroundColor4,
 
-					background: theme.backgroundColor,
+						background: theme.backgroundColor,
 
-					surface: theme.backgroundColor,
-					onSurface: theme.color,
+						surface: theme.backgroundColor,
+						onSurface: theme.color,
 
-					secondaryContainer: theme.raisedBackgroundColor,
-					onSecondaryContainer: theme.raisedColor,
+						secondaryContainer: theme.raisedBackgroundColor,
+						onSecondaryContainer: theme.raisedColor,
 
-					surfaceVariant: theme.backgroundColor3,
-					onSurfaceVariant: theme.color3,
+						surfaceVariant: theme.backgroundColor3,
+						onSurfaceVariant: theme.color3,
 
-					elevation: {
-						level0: 'transparent',
-						level1: theme.oddBackgroundColor,
-						level2: theme.raisedBackgroundColor,
-						level3: theme.raisedBackgroundColor,
-						level4: theme.raisedBackgroundColor,
-						level5: theme.raisedBackgroundColor,
+						elevation: {
+							level0: 'transparent',
+							level1: theme.oddBackgroundColor,
+							level2: theme.raisedBackgroundColor,
+							level3: theme.raisedBackgroundColor,
+							level4: theme.raisedBackgroundColor,
+							level5: theme.raisedBackgroundColor,
+						},
 					},
-				},
-			}}>
-				<DialogManager themeId={this.props.themeId}>
-					{mainContent}
-				</DialogManager>
-			</PaperProvider>
+				}}>
+					<DialogManager themeId={this.props.themeId}>
+						<MenuProvider
+							style={{ flex: 1 }}
+							closeButtonLabel={_('Dismiss')}
+						>
+							<FocusControl.MainAppContent style={{ flex: 1 }}>
+								{mainContent}
+							</FocusControl.MainAppContent>
+						</MenuProvider>
+					</DialogManager>
+				</PaperProvider>
+			</FocusControl.Provider>
 		);
 	}
 }

@@ -129,15 +129,23 @@ const useEditorCommands = (props: Props) => {
 					props.webviewRef.current.send('focus');
 				}
 			},
-			'editor.setCursorAtEndOfLine': (line: number) => {
-				// const scrollInfo = editorRef.current.getScrollInfo();
-				// const firstVisibleLineNum = editorRef.current.lineAtHeight(scrollInfo.top, 'local');
-				//const firstVisibleLineLength = editorRef.current.getLine(line).length;
-				focus('CodeMirror/refocusEditor1', editorRef.current);
-
-				const lineLength = editorRef.current.getLine(line).length;
-				editorRef.current.setCursor(line, lineLength);
+			'viewer.focus': () => {
+				if (props.visiblePanes.includes('viewer')) {
+					const editorCursorLine = editorRef.current.getCursor().line;
+					props.webviewRef.current.focusLine(editorCursorLine);
+				} else {
+					logger.info('Viewer not focused (not visible).');
+				}
 			},
+            'editor.setCursorAtEndOfLine': (line: number) => {
+                // const scrollInfo = editorRef.current.getScrollInfo();
+                // const firstVisibleLineNum = editorRef.current.lineAtHeight(scrollInfo.top, 'local');
+                //const firstVisibleLineLength = editorRef.current.getLine(line).length;
+                focus('CodeMirror/refocusEditor1', editorRef.current);
+
+                const lineLength = editorRef.current.getLine(line).length;
+                editorRef.current.setCursor(line, lineLength);
+            },
 			search: () => {
 				return editorRef.current.execCommand(EditorCommandType.ShowSearch);
 			},
