@@ -690,7 +690,8 @@ function changeSelectedNotes(draft: Draft<State>, action: any, options: any = nu
 	if (action.index) noteIds = [draft.notes[action.index].id];
 
 	if (action.type === 'NOTE_SELECT') {
-		if (JSON.stringify(draft.selectedNoteIds) === JSON.stringify(noteIds)) return;
+		// Supposedly prevents intra-note links containing both noteID and hash from opening
+		// if (JSON.stringify(draft.selectedNoteIds) === JSON.stringify(noteIds)) return;
 		draft.selectedNoteIds = noteIds;
 		draft.selectedNoteHash = action.hash ? action.hash : '';
 	} else if (action.type === 'NOTE_SELECT_ADD') {
