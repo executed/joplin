@@ -34,9 +34,9 @@ export default function useMessageHandler(
 			const s = msg.split(':');
 			s.splice(0, 1);
 			reg.logger().error(s.join(':'));
-		} else if (msg === 'editorSetCursorAtEndOfLine') {
+		} else if (msg === 'setCursorAtViewportBeginning') {
 			editorRef.current.execCommand({
-				name: 'editor.setCursorAtEndOfLine',
+				name: 'editor.setCursorAtViewportBeginning',
 				value: arg0
 			});
 		} else if (msg === 'noteRenderComplete') {

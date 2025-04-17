@@ -137,11 +137,27 @@ const useEditorCommands = (props: Props) => {
 					logger.info('Viewer not focused (not visible).');
 				}
 			},
-            'editor.setCursorAtEndOfLine': (line: number) => {
-                // const scrollInfo = editorRef.current.getScrollInfo();
-                // const firstVisibleLineNum = editorRef.current.lineAtHeight(scrollInfo.top, 'local');
-                //const firstVisibleLineLength = editorRef.current.getLine(line).length;
+            'editor.setCursorAtViewportBeginning': (skipIfCursorAlreadyManuallySet: boolean) => {
                 focus('CodeMirror/refocusEditor1', editorRef.current);
+
+				const editorView = editorRef.current.editor;
+				const selection = editorView.state.selection.main;
+				const startPos = selection.anchor;
+				let currentSelectionLine = editorView.state.doc.lineAt(startPos)?.number;
+				const totalLines = editorView.state.doc.lines;
+				if (skipIfCursorAlreadyManuallySet && (currentSelectionLine > 1 && currentSelectionLine < (totalLines - 1))) {
+					console.debug("Skip setting cursor at end of line because cursor is already set. Line: " + currentSelectionLine);
+					return;
+				} else {
+					console.debug("Continue setting cursor at end of line - cursor not set yet. Current Selection Line: " + currentSelectionLine);
+				}
+				console.debug("Calculating new line during setCursorAtViewportBeginning");
+				if (!editorRef.current) throw Error("editorRef not defined");
+
+				const scrollTop = editorView.scrollDOM.scrollTop;
+				const lineCalculated = editorView.lineBlockAtHeight(scrollTop);
+				let line = editorView.state.doc.lineAt(lineCalculated.from).number;
+				console.debug("Calculated line: " + line);
 
                 const lineLength = editorRef.current.getLine(line).length;
                 editorRef.current.setCursor(line, lineLength);

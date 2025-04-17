@@ -494,15 +494,21 @@
 		ipc.setPercentScroll = (event) => {
 			if (window.hash_whose_scroll_in_progress && noteRenderCompleteMessageIsOngoing_) {
 				let hashElem = document.getElementById(window.hash_whose_scroll_in_progress);
+                if (hashElem == null) {
+                    window.hash_whose_scroll_in_progress = null;
+                    noteRenderCompleteMessageIsOngoing_ = false;
+                    return;
+                }
 				hashElem.scrollIntoView();
 				let percentFromViewer = getPercentFromViewer();
 				window.hash_whose_scroll_in_progress = null;
 				noteRenderCompleteMessageIsOngoing_ = false;
+                console.warn("Sending scroll % from index.html: " + percentFromViewer);
 				ipcProxySendToHost('percentScroll', percentFromViewer);
 				// Translate viewer scroll percentage to the corresponding editor line
-				const editorLine = Number(hashElem.getAttribute("source-line"));
+				//const editorLine = Number(hashElem.getAttribute("source-line"));
 
-				ipcProxySendToHost('editorSetCursorAtEndOfLine', editorLine);
+				//ipcProxySendToHost('editorSetCursorAtEndOfLine', editorLine);
 			} else {
 				noteRenderCompleteMessageIsOngoing_ = false;
 				setPercentScroll(event.percent);
