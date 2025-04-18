@@ -161,9 +161,6 @@ const declarations: CommandDeclaration[] = [
 		name: 'editor.focus',
 	},
 	{
-		name: 'editor.setCursorAtViewportBeginning',
-	},
-	{
 		name: 'editor.execCommand',
 	},
 	{

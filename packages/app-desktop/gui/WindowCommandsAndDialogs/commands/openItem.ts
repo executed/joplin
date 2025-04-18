@@ -12,7 +12,8 @@ export const declaration: CommandDeclaration = {
 	name: 'openItem',
 };
 
-// Rich Markdown plugin prepends http:// before intra-note link when it's called via "Perform Action" keyboard shortcut.
+// Rich Markdown plugin prepends http:// before intra-note link (without note ID) when it's called via plugin's "Perform Action"
+// keyboard shortcut or if it's clicked with CTRL key pressed (core functionality).
 // Ideally would need to be fixed in plugin. Reference issue: https://github.com/CalebJohn/joplin-rich-markdown/issues/37
 const INTRA_NOTE_LINK_AS_EXT_LINK_REGEX = /^http:\/\/#.*$/;
 
@@ -26,36 +27,20 @@ export const runtime = (): CommandRuntime => {
 				link = fromFileUrl;
 			}
 
-			const isIntraNoteLinkAsExternalLink = INTRA_NOTE_LINK_AS_EXT_LINK_REGEX.test(link)
-			if (link.startsWith('joplin://') || link.startsWith(':/') || isIntraNoteLinkAsExternalLink) {
+			const isIntraNoteLinkWithoutNoteIdButWithHash = INTRA_NOTE_LINK_AS_EXT_LINK_REGEX.test(link)
+			if (link.startsWith('joplin://') || link.startsWith(':/') || isIntraNoteLinkWithoutNoteIdButWithHash) {
 				const parsedUrl = parseResourceUrl(link);
-				const intraNoteLinkHash = isIntraNoteLinkAsExternalLink ? link.split("#")[1] : null;
+				const intraNoteLinkHash = isIntraNoteLinkWithoutNoteIdButWithHash ? link.split("#")[1] : null;
 				if (parsedUrl || intraNoteLinkHash) {
 					const currentNoteId = context.state.selectedNoteIds[0];
 					let { itemId, hash } = (parsedUrl != null) ? parsedUrl : { itemId: null, hash: null};
 					hash = (intraNoteLinkHash == null) ? hash : intraNoteLinkHash;
 
-					console.debug("Current noteId: " + currentNoteId);
-					console.debug("Requested noteId: " + itemId);
-					console.debug("Requested hash: " + hash);
-
-					if (currentNoteId === itemId || isIntraNoteLinkAsExternalLink) {
-						console.debug("Just scrolling to hash...");
+					if (currentNoteId === itemId || isIntraNoteLinkWithoutNoteIdButWithHash) {
 						await CommandService.instance().execute('scrollToHash', hash);
 					} else {
-						console.debug("Opening hash in requested note...");
 						await openItemById(itemId, context.dispatch, hash);
 					}
-					let skipSetCursorIfPresent = false;
-					// For regular note openings or cross-note link without hash 'Resume Note' might restore scroll/cursor.
-					// We don't want to overwrite it.
-					if (hash?.length < 1) {
-						skipSetCursorIfPresent = true;
-					}
-					setTimeout(() => {
-						CommandService.instance().execute('editor.setCursorAtViewportBeginning', skipSetCursorIfPresent);
-					}, 1000);
-
 				} else {
 					void bridge().openExternal(link);
 				}

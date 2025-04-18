@@ -34,11 +34,6 @@ export default function useMessageHandler(
 			const s = msg.split(':');
 			s.splice(0, 1);
 			reg.logger().error(s.join(':'));
-		} else if (msg === 'setCursorAtViewportBeginning') {
-			editorRef.current.execCommand({
-				name: 'editor.setCursorAtViewportBeginning',
-				value: arg0
-			});
 		} else if (msg === 'noteRenderComplete') {
 			if (scrollWhenReady) {
 				const options = { ...scrollWhenReady };

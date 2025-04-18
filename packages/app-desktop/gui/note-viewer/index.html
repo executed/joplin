@@ -239,14 +239,10 @@
 					// If scrollmap is present, Element.scrollIntoView() is also
 					// available when document.readyState is interactive.
 					document.readyState === 'interactive' && scrollmap.isPresent()) {
-					window.hash_whose_scroll_in_progress = null;
 					const hash = event.hash.toLowerCase();
 					const e = document.getElementById(hash);
 					if (e) {
-						console.log('SCROLLING INTO HASH');
 						e.scrollIntoView();
-						console.log('SCROLLED INTO HASH');
-						window.hash_whose_scroll_in_progress = hash;
 						// It causes a scroll event, whose listener sent a new scroll
 						// position to Editor.
 					} else {
@@ -346,24 +342,15 @@
 					restorePercentScroll();
 					noteRenderCompleteMessageIsOngoing_ = true;
 					ipcProxySendToHost('noteRenderComplete');
-					console.log('NOTE RENDER COMPLETE');
-					//debugger;
 					return;
 				}
 			}
 			if (!heightChanged && cause !== 'dom-changed') return;
 			const restoreAndRefresh = () => {
 				scrollmap.refresh();
-				if (!noteRenderCompleteMessageIsOngoing_) {
-					restorePercentScroll();
-					// To ensures Editor's scroll position is synced with Viewer's
-					if (!noteRenderCompleteMessageIsOngoing_) ipcProxySendToHost('percentScroll', percentScroll_);
-				} else if (noteRenderCompleteMessageIsOngoing_ && window.hash_whose_scroll_in_progress && document.getElementById(window.hash_whose_scroll_in_progress)){
-					//document.getElementById(window.hash_whose_scroll_in_progress).scrollIntoView();
-					let percentFromViewer = getPercentFromViewer();
-					ipcProxySendToHost('percentScroll', percentFromViewer);
-					console.log('FINAL SCROLL INTO VIEW. View PCT: ' + percentFromViewer + ' percentScroll_ = ' + percentScroll_)
-				}
+				restorePercentScroll();
+				// To ensures Editor's scroll position is synced with Viewer's
+				if (!noteRenderCompleteMessageIsOngoing_) ipcProxySendToHost('percentScroll', percentScroll_);
 			};
 			const now = Date.now();
 			if (now < restoreAndRefreshTimeout_) {
@@ -495,27 +482,8 @@
 		}
 
 		ipc.setPercentScroll = (event) => {
-			if (window.hash_whose_scroll_in_progress && noteRenderCompleteMessageIsOngoing_) {
-				let hashElem = document.getElementById(window.hash_whose_scroll_in_progress);
-                if (hashElem == null) {
-                    window.hash_whose_scroll_in_progress = null;
-                    noteRenderCompleteMessageIsOngoing_ = false;
-                    return;
-                }
-				hashElem.scrollIntoView();
-				let percentFromViewer = getPercentFromViewer();
-				window.hash_whose_scroll_in_progress = null;
-				noteRenderCompleteMessageIsOngoing_ = false;
-                console.warn("Sending scroll % from index.html: " + percentFromViewer);
-				ipcProxySendToHost('percentScroll', percentFromViewer);
-				// Translate viewer scroll percentage to the corresponding editor line
-				//const editorLine = Number(hashElem.getAttribute("source-line"));
-
-				//ipcProxySendToHost('editorSetCursorAtEndOfLine', editorLine);
-			} else {
-				noteRenderCompleteMessageIsOngoing_ = false;
-				setPercentScroll(event.percent);
-			}
+			noteRenderCompleteMessageIsOngoing_ = false;
+			setPercentScroll(event.percent);
 		}
 
 		// HACK for Mark.js bug - https://github.com/julmot/mark.js/issues/127
